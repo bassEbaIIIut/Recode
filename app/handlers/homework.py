@@ -250,12 +250,16 @@ async def homework_personal_add_text(message: Message, state: FSMContext) -> Non
     subject = data.get("personal_subject") or "Без названия"
     telegraph_url = data.get("personal_telegraph_url")
     text = message.text.strip()
+    group_code = await _ensure_group(message)
+    if not group_code:
+        return
+    delete_at = await ctx.homework_service.calculate_delete_time(group_code, subject)
     ctx.homework_service.add_personal_homework(
         user_id=message.from_user.id,
         subject=subject,
         text=text,
         telegraph_url=telegraph_url,
-        delete_at=None,
+        delete_at=delete_at,
     )
     await state.update_data(personal_subject=None, personal_telegraph_url=None)
     await state.set_state(HomeworkStates.PERSONAL_MENU)
@@ -480,6 +484,7 @@ async def homework_public_suggest_text(message: Message, state: FSMContext) -> N
     subject = data.get("public_subject") or "Без названия"
     telegraph_url = data.get("public_telegraph_url")
     text = message.text.strip()
+    delete_at = await ctx.homework_service.calculate_delete_time(group_code, subject)
     ai_result = await ctx.homework_service.pollinations_check_homework(text)
     ctx.homework_service.append_ai_log(
         user_id=message.from_user.id,
@@ -499,6 +504,7 @@ async def homework_public_suggest_text(message: Message, state: FSMContext) -> N
             subject=subject,
             text=text,
             telegraph_url=telegraph_url,
+            delete_at=delete_at,
         )
         await state.update_data(public_group_code=None, public_subject=None, public_telegraph_url=None)
         await state.set_state(HomeworkStates.PUBLIC_MENU)

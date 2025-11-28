@@ -310,6 +310,10 @@ class ScheduleService:
             self._save_schedule(group_code, base_date, schedule)
         return schedule
 
+    async def get_week_schedule(self, group_code: str, base_date: dt.date) -> dict:
+        """Return cached or freshly fetched schedule for the requested week."""
+        return await self._fetch_schedule_for_group(group_code, base_date)
+
     async def get_day_schedule_text(self, group_code: str, date_obj: dt.date) -> str:
         schedule = await self._fetch_schedule_for_group(group_code, date_obj)
         if not schedule:

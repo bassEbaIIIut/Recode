@@ -24,6 +24,7 @@ async def setup_bot(bot: Bot, dp: Dispatcher, config: AppConfig) -> None:
     admin_service = AdminPasswordService(config.passwords_path)
     homework_service = HomeworkService(
         db=db,
+        schedule_service=schedule_service,
         times_path=config.times_path,
         models_path=config.models_path,
         homeworks_dir=config.homeworks_dir,
