@@ -1,0 +1,20 @@
+[
+  {
+    "id": "4b9d6dd8-74f7-4b90-a01b-924603372b33",
+    "user_id": 1843578375,
+    "subject": "Башкирский язык (Лек.)",
+    "text": "Net",
+    "telegraph_url": null,
+    "created_at": "2025-11-27T06:18:07.381574",
+    "delete_at": null
+  },
+  {
+    "id": "ca98fe6e-122e-4d5b-97c4-c80c9a9e75bf",
+    "user_id": 1843578375,
+    "subject": "Биология (Лек.)",
+    "text": "Не знаю",
+    "telegraph_url": null,
+    "created_at": "2025-11-27T06:18:38.008235",
+    "delete_at": null
+  }
+]

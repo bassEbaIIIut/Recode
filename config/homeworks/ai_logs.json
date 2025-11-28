@@ -1,0 +1,156 @@
+[
+  {
+    "timestamp": "2025-11-23T09:41:59.497792",
+    "user_id": 8189336411,
+    "username": "Light_YYagami",
+    "full_name": "­",
+    "subject": "рпрлоддо",
+    "text": "ррр",
+    "telegraph_url": null,
+    "ai_result": {
+      "raw": "ошибка запроса к pollinations.ai",
+      "decision": "нет"
+    }
+  },
+  {
+    "timestamp": "2025-11-23T09:49:08.542269",
+    "user_id": 8189336411,
+    "username": "Light_YYagami",
+    "full_name": "­",
+    "subject": "Xz",
+    "text": "Vodka",
+    "telegraph_url": null,
+    "ai_result": {
+      "raw": "ошибка запроса к pollinations.ai",
+      "decision": "нет"
+    }
+  },
+  {
+    "timestamp": "2025-11-23T19:33:16.945608",
+    "user_id": 8189336411,
+    "username": "Light_YYagami",
+    "full_name": "­",
+    "subject": "Башкирский язык (Лек.)",
+    "text": "Хз",
+    "telegraph_url": null,
+    "ai_result": {
+      "raw": "нет. Этот текст не является заданием: он состоит только из сленгового сокращения «Хз» и не содержит задачи или инструкции для домашней работы.",
+      "decision": "нет"
+    }
+  },
+  {
+    "id": "4409531a-865f-4983-a9b6-f886ccf09cd4",
+    "user_id": 8189336411,
+    "username": "Light_YYagami",
+    "full_name": "­",
+    "subject": "Основы безопасности и защиты Родины (Лек.)",
+    "text": "Adolf",
+    "telegraph_url": null,
+    "ai_result": {
+      "decision": "нет",
+      "raw": "HTTP 400"
+    },
+    "created_at": "2025-11-24T18:44:19.215964"
+  },
+  {
+    "id": "283142c0-494f-430c-af57-464220d4abc9",
+    "user_id": 8189336411,
+    "username": "Light_YYagami",
+    "full_name": "­",
+    "subject": "География (Лек.)",
+    "text": "Упражнение 294",
+    "telegraph_url": null,
+    "ai_result": {
+      "decision": "нет",
+      "raw": "HTTP 400"
+    },
+    "created_at": "2025-11-24T18:47:07.410649"
+  },
+  {
+    "id": "d22110a2-4a68-442f-be5a-6f794eba80f0",
+    "ts": "2025-11-24T19:05:59.029577",
+    "user_id": 8189336411,
+    "username": "Light_YYagami",
+    "full_name": "­",
+    "subject": "Основы безопасности и защиты Родины (Лек.)",
+    "text": "Хуй",
+    "telegraph_url": null,
+    "ai_result": {
+      "decision": "нет",
+      "raw": "{\"error\": \"400 Bad Request\", \"status\": 400, \"details\": {\"error\": {\"message\": \"azure-openai error: Unsupported value: 'temperature' does not support 0.5 with this model. Only the default (1) value is supported.\", \"type\": \"invalid_request_error\", \"param\": \"temperature\", \"code\": \"unsupported_value\"}, \"provider\": \"azure-openai\"}}",
+      "request": {
+        "model": "openai",
+        "temperature": 0.5,
+        "messages": [
+          {
+            "role": "system",
+            "content": "Ты бинарный классификатор. Отвечай только «да» или «нет». Вопрос: является ли этот текст реалистичным школьным домашним заданием? Ответ должен быть «да» или «нет», также должно быть пояснение."
+          },
+          {
+            "role": "user",
+            "content": "Хуй"
+          }
+        ]
+      },
+      "checked_at": "2025-11-24T19:05:59.017234"
+    }
+  },
+  {
+    "id": "03eb8ca5-a6fc-4ae0-84ad-bf21f7195727",
+    "ts": "2025-11-24T19:07:23.544956",
+    "user_id": 8189336411,
+    "username": "Light_YYagami",
+    "full_name": "­",
+    "subject": "Башкирский язык (Лек.)",
+    "text": "Test",
+    "telegraph_url": null,
+    "ai_result": {
+      "decision": "нет",
+      "raw": "{\"error\": \"Model not found or tier not high enough. Your tier: anonymous, required tier: seed. Get unlimited access at https://enter.pollinations.ai\", \"status\": 402}",
+      "request": {
+        "model": "gemini",
+        "temperature": 0.5,
+        "messages": [
+          {
+            "role": "system",
+            "content": "Ты бинарный классификатор. Отвечай только «да» или «нет». Вопрос: является ли этот текст реалистичным школьным домашним заданием? Ответ должен быть «да» или «нет», также должно быть пояснение."
+          },
+          {
+            "role": "user",
+            "content": "Test"
+          }
+        ]
+      },
+      "checked_at": "2025-11-24T19:07:23.541317"
+    }
+  },
+  {
+    "id": "c7ecb453-aec1-4345-a48a-ddbf1e8d2952",
+    "ts": "2025-11-24T19:11:51.904316",
+    "user_id": 8189336411,
+    "username": "Light_YYagami",
+    "full_name": "­",
+    "subject": "Биология (Лек.)",
+    "text": "Test",
+    "telegraph_url": null,
+    "ai_result": {
+      "decision": "нет",
+      "raw": "нет. Это не реалистичное задание: одно слово без инструкций, вопросов или задач не является полноценным домашним заданием; обычно домашнее задание содержит конкретные задачи, инструкции и требования. «Test» скорее относится к форме контроля знаний, а не к домашке.",
+      "request": {
+        "model": "openai",
+        "temperature": 1.0,
+        "messages": [
+          {
+            "role": "system",
+            "content": "Ты бинарный классификатор. Отвечай только «да» или «нет». Вопрос: является ли этот текст реалистичным школьным домашним заданием? Ответ должен быть «да» или «нет», также должно быть пояснение."
+          },
+          {
+            "role": "user",
+            "content": "Test"
+          }
+        ]
+      },
+      "checked_at": "2025-11-24T19:11:51.898239"
+    }
+  }
+]

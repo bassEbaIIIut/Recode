@@ -1,0 +1,18 @@
+[
+  {
+    "id": "ed7ad0f8-6cf2-4fe2-88cb-621a5cd2c42b",
+    "user_id": 1843578375,
+    "username": "mihort",
+    "full_name": "Mihort",
+    "group_code": "СВ251",
+    "subject": "Биология (Лек.)",
+    "text": "Lol",
+    "telegraph_url": null,
+    "ai_result": {
+      "decision": "нет",
+      "reason": "Не удалось разобрать ответ модели",
+      "raw": "{\"choices\":[{\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"protected_material_code\":{\"filtered\":false,\"detected\":false},\"protected_material_text\":{\"filtered\":false,\"detected\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}},\"finish_reason\":\"stop\",\"index\":0,\"logprobs\":null,\"message\":{\"annotations\":[],\"content\":\"нет — этот текст слишком короткий и не содержит задания, инструкций, вопросов или критериев оценки, которые обычно встречаются в реалистичном школьном домашнем задании.\",\"refusal\":null,\"role\":\"assistant\"}}],\"created\":1764224402,\"id\":\"pllns_8d0879780a978351a602c00bdd37bd5a\",\"model\":\"gpt-5-nano-2025-08-07\",\"object\":\"chat.completion\",\"prompt_filter_results\":[{\"prompt_index\":0,\"content_filter_results\":{\"hate\":{\"filtered\":false,\"severity\":\"safe\"},\"jailbreak\":{\"filtered\":false,\"detected\":false},\"self_harm\":{\"filtered\":false,\"severity\":\"safe\"},\"sexual\":{\"filtered\":false,\"severity\":\"safe\"},\"violence\":{\"filtered\":false,\"severity\":\"safe\"}}}],\"system_fingerprint\":null,\"usage\":{\"completion_tokens\":495,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"audio_tokens\":0,\"reasoning_tokens\":448,\"rejected_prediction_tokens\":0},\"prompt_tokens\":62,\"prompt_tokens_details\":{\"audio_tokens\":0,\"cached_tokens\":0},\"total_tokens\":557},\"user_tier\":\"anonymous\"}"
+    },
+    "created_at": "2025-11-27T06:20:06.879867"
+  }
+]

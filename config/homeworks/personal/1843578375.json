@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1843578375_1763908547",
+    "subject": "Химия (Лек.)",
+    "text": "Хз",
+    "telegraph_url": null,
+    "created_at": "2025-11-23T19:35:47.987750",
+    "delete_at": "2025-11-24T19:35:47.990020",
+    "type": "personal"
+  },
+  {
+    "id": "1843578375_1763910380",
+    "subject": "Биология (Лек.)",
+    "text": "Изумруд",
+    "telegraph_url": null,
+    "created_at": "2025-11-23T20:06:20.096235",
+    "delete_at": "2025-11-24T20:06:20.102001",
+    "type": "personal"
+  },
+  {
+    "id": "024ac503-6cab-46d5-8213-71960b46c1b2",
+    "subject": "География (Лек.)",
+    "text": "Адо",
+    "telegraph_url": null,
+    "delete_at": null,
+    "created_at": "2025-11-25T15:39:12.661045"
+  },
+  {
+    "id": "2cc4e719-c275-437c-819f-28a05bc65cca",
+    "subject": "Физика (Лек.)",
+    "text": "Text",
+    "telegraph_url": "https://telegra.ph/Domashnee-zadanie-11-26-5",
+    "created_at": "2025-11-26T17:28:19.876545",
+    "delete_at": null
+  },
+  {
+    "id": "cd4acac6-18dd-423c-aebf-43134e8af1eb",
+    "subject": "География (Лек.)",
+    "text": "Text",
+    "telegraph_url": null,
+    "created_at": "2025-11-26T17:44:46.494688",
+    "delete_at": null
+  }
+]

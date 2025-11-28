@@ -1,0 +1,26 @@
+[
+  {
+    "id": "6f5255e3-94f7-458c-baab-0fadde0a6240",
+    "subject": "Физика (Лек.)",
+    "text": "нет",
+    "telegraph_url": null,
+    "created_at": "2025-11-24T18:41:57.304752",
+    "delete_at": null
+  },
+  {
+    "id": "3d6eb3be-3777-48c7-abe0-161d821f3b0e",
+    "subject": "География (Лек.)",
+    "text": "Lev",
+    "telegraph_url": null,
+    "delete_at": null,
+    "created_at": "2025-11-24T19:05:02.917489"
+  },
+  {
+    "id": "2b60d9d0-1b87-4181-bf39-c95160fa515f",
+    "subject": "Иностранный язык (Лек.)",
+    "text": "Orb",
+    "telegraph_url": null,
+    "delete_at": null,
+    "created_at": "2025-11-24T19:05:29.485086"
+  }
+]

@@ -1,0 +1,392 @@
+===== USER ERRORS =====
+[2025-11-22T21:01:17.043830] user_id=8189336411 username=Light_YYagami
+action: admin_sessions_refresh
+error: Telegram server says - Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
+Traceback (most recent call last):
+  File "C:\Mihort\RECODE\app\handlers\start.py", line 109, in __call__
+    return await self._process(handler, event, data, from_user)
+  File "C:\Mihort\RECODE\app\handlers\start.py", line 85, in _process
+    return await handler(event, data)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+  File "C:\Mihort\RECODE\app\handlers\admin.py", line 1754, in admin_sessions_refresh
+    await callback.message.edit_text(text, reply_markup=markup)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\methods\base.py", line 84, in emit
+    return await bot(self)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\client\bot.py", line 485, in __call__
+    return await self.session(self, method, timeout=request_timeout)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\client\session\base.py", line 254, in __call__
+    return cast(TelegramType, await middleware(bot, method))
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\client\session\aiohttp.py", line 185, in make_request
+    response = self.check_response(
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\client\session\base.py", line 120, in check_response
+    raise TelegramBadRequest(method=method, message=description)
+aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
+
+
+[2025-11-22T22:08:47.288185] user_id=8189336411 username=Light_YYagami
+action: admin_sessions_refresh
+error: Telegram server says - Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
+Traceback (most recent call last):
+  File "C:\Mihort\RECODE\app\handlers\start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+  File "C:\Mihort\RECODE\app\handlers\start.py", line 89, in _process
+    return await handler(event, data)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+  File "C:\Mihort\RECODE\app\handlers\admin.py", line 1748, in admin_sessions_refresh
+    await callback.message.edit_text(text, reply_markup=markup)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\methods\base.py", line 84, in emit
+    return await bot(self)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\client\bot.py", line 485, in __call__
+    return await self.session(self, method, timeout=request_timeout)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\client\session\base.py", line 254, in __call__
+    return cast(TelegramType, await middleware(bot, method))
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\client\session\aiohttp.py", line 185, in make_request
+    response = self.check_response(
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\client\session\base.py", line 120, in check_response
+    raise TelegramBadRequest(method=method, message=description)
+aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
+
+
+[2025-11-23T09:41:13.002184] user_id=8189336411 username=Light_YYagami
+action: 📘 Личная домашка
+error: 'Database' object has no attribute 'is_user_premium'
+Traceback (most recent call last):
+  File "C:\Mihort\RECODE\app\handlers\start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+  File "C:\Mihort\RECODE\app\handlers\start.py", line 89, in _process
+    return await handler(event, data)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+  File "C:\Mihort\RECODE\app\handlers\homework.py", line 62, in homework_personal_menu
+    is_premium = await ctx.homework_service.is_premium(message.from_user.id)
+  File "C:\Mihort\RECODE\app\services\homework_service.py", line 84, in is_premium
+    return await self.db.is_user_premium(user_id)
+AttributeError: 'Database' object has no attribute 'is_user_premium'
+
+
+[2025-11-23T10:36:32.016937] user_id=8189336411 username=Light_YYagami
+action: /givepremium @mihort 365d
+error: 'Database' object has no attribute 'set_user_premium'
+Traceback (most recent call last):
+  File "C:\Mihort\RECODE\app\handlers\start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+  File "C:\Mihort\RECODE\app\handlers\start.py", line 89, in _process
+    return await handler(event, data)
+  File "C:\Program Files\Python310\lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+  File "C:\Mihort\RECODE\app\handlers\admin.py", line 485, in cmd_givepremium
+    await ctx.db.set_user_premium(tg_id, until)
+AttributeError: 'Database' object has no attribute 'set_user_premium'
+
+
+[2025-11-23T19:32:21.408611] user_id=8189336411 username=Light_YYagami
+action: admin_users_next:1
+error: Telegram server says - Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 1852, in admin_users_next
+    await callback.message.edit_text(text, reply_markup=markup)
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/methods/base.py", line 84, in emit
+    return await bot(self)
+           ^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/bot.py", line 485, in __call__
+    return await self.session(self, method, timeout=request_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/session/base.py", line 254, in __call__
+    return cast(TelegramType, await middleware(bot, method))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/session/aiohttp.py", line 185, in make_request
+    response = self.check_response(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/session/base.py", line 120, in check_response
+    raise TelegramBadRequest(method=method, message=description)
+aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
+
+
+[2025-11-23T19:39:24.882514] user_id=8189336411 username=Light_YYagami
+action: 🤖 Выбрать модель
+error: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 611, in admin_ai_select_model
+    models = await ctx.homework_service.pollinations_refresh_models()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/services/homework_service.py", line 292, in pollinations_refresh_models
+    data = await resp.json()
+           ^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 749, in json
+    raise ContentTypeError(
+aiohttp.client_exceptions.ContentTypeError: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+
+
+[2025-11-23T19:39:29.474315] user_id=8189336411 username=Light_YYagami
+action: 🔄 Обновить список моделей
+error: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 603, in admin_ai_refresh_models
+    models = await ctx.homework_service.pollinations_refresh_models()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/services/homework_service.py", line 292, in pollinations_refresh_models
+    data = await resp.json()
+           ^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 749, in json
+    raise ContentTypeError(
+aiohttp.client_exceptions.ContentTypeError: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+
+
+[2025-11-23T19:39:54.887539] user_id=8189336411 username=Light_YYagami
+action: 🔄 Обновить список моделей
+error: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 603, in admin_ai_refresh_models
+    models = await ctx.homework_service.pollinations_refresh_models()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/services/homework_service.py", line 292, in pollinations_refresh_models
+    data = await resp.json()
+           ^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 749, in json
+    raise ContentTypeError(
+aiohttp.client_exceptions.ContentTypeError: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+
+
+[2025-11-23T19:40:15.085274] user_id=8189336411 username=Light_YYagami
+action: 🔄 Обновить список моделей
+error: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 603, in admin_ai_refresh_models
+    models = await ctx.homework_service.pollinations_refresh_models()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/services/homework_service.py", line 292, in pollinations_refresh_models
+    data = await resp.json()
+           ^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 749, in json
+    raise ContentTypeError(
+aiohttp.client_exceptions.ContentTypeError: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+
+
+[2025-11-23T19:40:44.242240] user_id=8189336411 username=Light_YYagami
+action: 🤖 Выбрать модель
+error: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 611, in admin_ai_select_model
+    models = await ctx.homework_service.pollinations_refresh_models()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/services/homework_service.py", line 292, in pollinations_refresh_models
+    data = await resp.json()
+           ^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 749, in json
+    raise ContentTypeError(
+aiohttp.client_exceptions.ContentTypeError: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+
+
+[2025-11-23T19:55:51.327801] user_id=8189336411 username=Light_YYagami
+action: 🤖 Выбрать модель
+error: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 618, in admin_ai_select_model
+    models = await ctx.homework_service.pollinations_refresh_models()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/services/homework_service.py", line 292, in pollinations_refresh_models
+    data = await resp.json()
+           ^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 749, in json
+    raise ContentTypeError(
+aiohttp.client_exceptions.ContentTypeError: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+
+
+[2025-11-23T19:55:58.345430] user_id=8189336411 username=Light_YYagami
+action: 🔄 Обновить список моделей
+error: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 609, in admin_ai_refresh_models
+    models = await ctx.homework_service.pollinations_refresh_models()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/services/homework_service.py", line 292, in pollinations_refresh_models
+    data = await resp.json()
+           ^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 749, in json
+    raise ContentTypeError(
+aiohttp.client_exceptions.ContentTypeError: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+
+
+[2025-11-23T20:03:21.040025] user_id=8189336411 username=Light_YYagami
+action: 50
+error: Telegram server says - Bad Request: message is too long
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 1297, in admin_logs_user_errors_show
+    await message.answer("\n".join(lines_out))
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/methods/base.py", line 84, in emit
+    return await bot(self)
+           ^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/bot.py", line 485, in __call__
+    return await self.session(self, method, timeout=request_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/session/base.py", line 254, in __call__
+    return cast(TelegramType, await middleware(bot, method))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/session/aiohttp.py", line 185, in make_request
+    response = self.check_response(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/session/base.py", line 120, in check_response
+    raise TelegramBadRequest(method=method, message=description)
+aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is too long
+
+
+[2025-11-23T20:03:35.202378] user_id=8189336411 username=Light_YYagami
+action: 10
+error: Telegram server says - Bad Request: message is too long
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 1297, in admin_logs_user_errors_show
+    await message.answer("\n".join(lines_out))
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/methods/base.py", line 84, in emit
+    return await bot(self)
+           ^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/bot.py", line 485, in __call__
+    return await self.session(self, method, timeout=request_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/session/base.py", line 254, in __call__
+    return cast(TelegramType, await middleware(bot, method))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/session/aiohttp.py", line 185, in make_request
+    response = self.check_response(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/client/session/base.py", line 120, in check_response
+    raise TelegramBadRequest(method=method, message=description)
+aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is too long
+
+
+[2025-11-24T17:47:36.892056] user_id=8189336411 username=Light_YYagami
+action: 🤖 Выбрать модель
+error: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/admin.py", line 618, in admin_ai_select_model
+    models = await ctx.homework_service.pollinations_refresh_models()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/services/homework_service.py", line 292, in pollinations_refresh_models
+    data = await resp.json()
+           ^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiohttp/client_reqrep.py", line 749, in json
+    raise ContentTypeError(
+aiohttp.client_exceptions.ContentTypeError: 200, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://pollinations.ai/models'
+
+
+[2025-11-24T18:34:25.394680] user_id=8189336411 username=Light_YYagami
+action: 📚 Общая домашка
+error: homework_public_menu_keyboard() takes 0 positional arguments but 1 was given
+Traceback (most recent call last):
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 113, in __call__
+    return await self._process(handler, event, data, from_user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/start.py", line 89, in _process
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/homework.py", line 109, in homework_public_menu
+    kb = await _public_menu_keyboard_for_user(message)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/emulated/0/RECODE/app/handlers/homework.py", line 41, in _public_menu_keyboard_for_user
+    return homework_public_menu_keyboard(is_steward)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: homework_public_menu_keyboard() takes 0 positional arguments but 1 was given
+
