@@ -657,11 +657,15 @@ async def admin_approve_hw(callback: CallbackQuery) -> None:
     ctx = get_context()
     item = ctx.homework_service.get_pending_request(req_id)
     if item:
+        delete_at = await ctx.homework_service.calculate_delete_time(
+            item["group_code"], item["subject"]
+        )
         ctx.homework_service.add_public_homework(
             item["group_code"],
             item["subject"],
             item["text"],
             item["telegraph_url"],
+            delete_at,
         )
         ctx.homework_service.remove_pending_request(req_id)
         await callback.message.edit_text("✅ Одобрено")

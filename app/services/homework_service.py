@@ -1,18 +1,23 @@
 import datetime as dt
 import json
+import re
 import uuid
 from html import escape
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import aiohttp
+
+if TYPE_CHECKING:
+    from app.services.schedule_service import ScheduleService
 
 
 class HomeworkService:
     def __init__(
         self,
         db,
+        schedule_service: "ScheduleService",
         times_path: Path,
         models_path: Path,
         homeworks_dir: Path,
@@ -20,24 +25,53 @@ class HomeworkService:
         telegraph_token: str | None,
     ):
         self.db = db
+        self.schedule_service = schedule_service
         self.times_path = times_path
         self.models_path = models_path
         self.homeworks_dir = homeworks_dir
         self.freeimage_api_key = freeimage_api_key
         self.telegraph_token = telegraph_token
         self.homeworks_dir.mkdir(parents=True, exist_ok=True)
-        self.personal_path = self.homeworks_dir / "personal.json"
-        self.public_path = self.homeworks_dir / "public.json"
+        self.personal_dir = self.homeworks_dir / "personal"
+        self.public_dir = self.homeworks_dir / "public"
+        self.personal_dir.mkdir(parents=True, exist_ok=True)
+        self.public_dir.mkdir(parents=True, exist_ok=True)
+        self._legacy_personal_path = self.homeworks_dir / "personal.json"
+        self._legacy_public_path = self.homeworks_dir / "public.json"
         self.pending_path = self.homeworks_dir / "pending.json"
         self.ai_logs_path = self.homeworks_dir / "ai_logs.jsonl"
         self.ai_config_path = self.homeworks_dir / "ai_config.json"
+        self._times_cache: dict | None = None
         self._ensure_files()
 
     def _ensure_files(self) -> None:
-        if not self.personal_path.exists():
-            self.personal_path.write_text("[]", encoding="utf-8")
-        if not self.public_path.exists():
-            self.public_path.write_text("[]", encoding="utf-8")
+        if self._legacy_personal_path.exists():
+            items = self._load_json_list(self._legacy_personal_path)
+            for item in items:
+                uid = item.get("user_id")
+                if uid is None:
+                    continue
+                current = self._load_json_list(self._personal_file(uid))
+                current.append(item)
+                self._save_json_list(self._personal_file(uid), current)
+            try:
+                self._legacy_personal_path.unlink()
+            except OSError:
+                pass
+        if self._legacy_public_path.exists():
+            items = self._load_json_list(self._legacy_public_path)
+            grouped: dict[str, list[dict]] = {}
+            for item in items:
+                gc = (item.get("group_code") or "").strip()
+                if not gc:
+                    continue
+                grouped.setdefault(gc, []).append(item)
+            for gc, lst in grouped.items():
+                self._save_json_list(self._public_file(gc), lst)
+            try:
+                self._legacy_public_path.unlink()
+            except OSError:
+                pass
         if not self.pending_path.exists():
             self.pending_path.write_text("[]", encoding="utf-8")
         if not self.ai_logs_path.exists():
@@ -66,15 +100,45 @@ class HomeworkService:
     def _save_json_list(self, path: Path, items: list[dict]) -> None:
         path.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    def _personal_file(self, user_id: int) -> Path:
+        return self.personal_dir / f"{user_id}.json"
+
+    def _public_file(self, group_code: str) -> Path:
+        safe_code = re.sub(r"[\s-]+", "", group_code).upper() or "UNKNOWN"
+        return self.public_dir / f"{safe_code}.json"
+
+    def _load_personal_hw(self, user_id: int) -> list[dict]:
+        return self._load_json_list(self._personal_file(user_id))
+
+    def _save_personal_hw(self, user_id: int, items: list[dict]) -> None:
+        self._save_json_list(self._personal_file(user_id), items)
+
+    def _load_public_hw(self, group_code: str) -> list[dict]:
+        return self._load_json_list(self._public_file(group_code))
+
+    def _save_public_hw(self, group_code: str, items: list[dict]) -> None:
+        self._save_json_list(self._public_file(group_code), items)
+
     def _now_iso(self) -> str:
         return dt.datetime.utcnow().isoformat()
 
+    def _format_datetime(self, value: str | dt.datetime | None) -> str:
+        if value is None:
+            return ""
+        dt_obj: dt.datetime | None
+        if isinstance(value, dt.datetime):
+            dt_obj = value
+        else:
+            try:
+                dt_obj = dt.datetime.fromisoformat(value)
+            except Exception:
+                dt_obj = None
+        if not dt_obj:
+            return ""
+        return dt_obj.strftime("%d.%m.%Y %H:%M")
+
     async def is_premium(self, user_id: int) -> bool:
         return await self.db.is_user_premium(user_id)
-
-    def _load_personal_hw(self, user_id: int) -> list[dict]:
-        items = self._load_json_list(self.personal_path)
-        return [i for i in items if i.get("user_id") == user_id]
 
     def _compact_ai_raw(self, raw: Any) -> str | None:
         if raw is None:
@@ -123,6 +187,122 @@ class HomeworkService:
             "meta": raw,
         }
 
+    def _normalize_text(self, s: str) -> str:
+        s = (s or "").lower().replace("ё", "е")
+        return re.sub(r"[\s\-]", "", s)
+
+    def _load_times(self) -> dict:
+        if self._times_cache is None:
+            try:
+                raw = self.times_path.read_text(encoding="utf-8")
+                self._times_cache = json.loads(raw or "{}")
+            except Exception:
+                self._times_cache = {}
+        return self._times_cache or {}
+
+    def _find_times_template(self, group_code: str) -> str | None:
+        data = self._load_times()
+        groups_map = data.get("groups_map", {})
+        target = self._normalize_text(group_code)
+        for key, info in groups_map.items():
+            matches = info.get("match") if isinstance(info, dict) else None
+            if not matches:
+                continue
+            for m in matches:
+                if self._normalize_text(m) == target:
+                    return key
+        return None
+
+    def _weekday_key(self, date_obj: dt.date) -> str:
+        return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"][date_obj.weekday()]
+
+    def _filter_lessons(self, lessons: list[str]) -> list[str]:
+        filtered = []
+        for item in lessons:
+            low = item.lower()
+            if "внеуроч" in low or "обед" in low:
+                continue
+            filtered.append(item)
+        return filtered
+
+    def _parse_end_time(self, item: str) -> dt.time | None:
+        m = re.search(r"(\d{2}:\d{2})\s*[\u2013-]\s*(\d{2}:\d{2})", item)
+        if not m:
+            return None
+        try:
+            end = dt.datetime.strptime(m.group(2), "%H:%M").time()
+            return end
+        except Exception:
+            return None
+
+    def _pair_end_datetime(self, template_key: str, date_obj: dt.date, pair_number: int) -> dt.datetime | None:
+        data = self._load_times()
+        template = data.get("templates", {}).get(template_key, {})
+        if not template:
+            return None
+        day_key = self._weekday_key(date_obj)
+        lessons = template.get(day_key)
+        if not isinstance(lessons, list):
+            return None
+        filtered = self._filter_lessons(lessons)
+        first_lesson_idx = (pair_number - 1) * 2
+        if first_lesson_idx < 0 or first_lesson_idx >= len(filtered):
+            return None
+        end_time = self._parse_end_time(filtered[first_lesson_idx])
+        if not end_time:
+            return None
+        return dt.datetime.combine(date_obj, end_time)
+
+    async def _find_pair_for_subject(self, group_code: str, subject: str) -> tuple[dt.date, int] | None:
+        normalized_target = self._normalize_text(subject)
+        if not normalized_target:
+            return None
+        candidates: list[tuple[dt.date, int]] = []
+        for shift in (0, 7):
+            base_date = dt.date.today() + dt.timedelta(days=shift)
+            schedule = await self.schedule_service.get_week_schedule(group_code, base_date)
+            if not schedule:
+                continue
+            for date_str, info in schedule.items():
+                try:
+                    date_obj = dt.datetime.strptime(date_str, "%d.%m.%Y").date()
+                except Exception:
+                    continue
+                pairs = info.get("pairs", {}) if isinstance(info, dict) else {}
+                for pair_num_raw, entries in pairs.items():
+                    try:
+                        pair_num = int(pair_num_raw)
+                    except Exception:
+                        continue
+                    if not isinstance(entries, list):
+                        continue
+                    for raw in entries:
+                        subj = str(raw or "").split("|")[0].strip()
+                        if self._normalize_text(subj) == normalized_target:
+                            candidates.append((date_obj, pair_num))
+                            break
+        if not candidates:
+            return None
+        candidates.sort(key=lambda x: (x[0], x[1]))
+        return candidates[0]
+
+    async def calculate_delete_time(self, group_code: str, subject: str) -> dt.datetime | None:
+        template_key = self._find_times_template(group_code)
+        if not template_key:
+            return None
+        pair_info = await self._find_pair_for_subject(group_code, subject)
+        if pair_info:
+            date_obj, pair_num = pair_info
+        else:
+            m = re.search(r"(\d+)", subject)
+            if not m:
+                return None
+            pair_num = int(m.group(1))
+            date_obj = dt.date.today()
+        if pair_num <= 0:
+            return None
+        return self._pair_end_datetime(template_key, date_obj, pair_num)
+
     def add_personal_homework(
         self,
         user_id: int,
@@ -131,7 +311,7 @@ class HomeworkService:
         telegraph_url: str | None,
         delete_at: dt.datetime | None,
     ) -> None:
-        items = self._load_json_list(self.personal_path)
+        items = self._load_personal_hw(user_id)
         new_item = {
             "id": str(uuid.uuid4()),
             "user_id": user_id,
@@ -142,17 +322,17 @@ class HomeworkService:
             "delete_at": delete_at.isoformat() if delete_at else None,
         }
         items.append(new_item)
-        self._save_json_list(self.personal_path, items)
+        self._save_personal_hw(user_id, items)
 
     async def delete_personal_homework(self, user_id: int, subject: str) -> bool:
-        items = self._load_json_list(self.personal_path)
+        items = self._load_personal_hw(user_id)
         before = len(items)
         items = [i for i in items if not (i.get("user_id") == user_id and i.get("subject") == subject)]
-        self._save_json_list(self.personal_path, items)
+        self._save_personal_hw(user_id, items)
         return len(items) < before
 
     async def edit_personal_homework_text(self, user_id: int, hw_id: str, new_text: str) -> bool:
-        items = self._load_json_list(self.personal_path)
+        items = self._load_personal_hw(user_id)
         changed = False
         for i in items:
             if i.get("user_id") == user_id and i.get("id") == hw_id:
@@ -160,7 +340,7 @@ class HomeworkService:
                 changed = True
                 break
         if changed:
-            self._save_json_list(self.personal_path, items)
+            self._save_personal_hw(user_id, items)
         return changed
 
     async def format_personal_view(self, user_id: int) -> str:
@@ -173,16 +353,16 @@ class HomeworkService:
             subject = escape(item.get("subject") or "Без названия")
             text = escape(item.get("text") or "")
             telegraph_url = item.get("telegraph_url")
+            delete_at = self._format_datetime(item.get("delete_at"))
             lines.append(f"📌 <b>{subject}</b>")
             if text:
                 lines.append(text)
             if telegraph_url:
                 lines.append(f"Фото: <a href=\"{escape(telegraph_url)}\">открыть</a>")
+            if delete_at:
+                lines.append(f"Удалится: <code>{escape(delete_at)}</code>")
             lines.append("")
         return "\n".join(lines)
-
-    def _load_public_hw_all(self) -> list[dict]:
-        return self._load_json_list(self.public_path)
 
     def add_public_homework(
         self,
@@ -190,8 +370,9 @@ class HomeworkService:
         subject: str,
         text: str,
         telegraph_url: str | None,
+        delete_at: dt.datetime | None,
     ) -> None:
-        items = self._load_json_list(self.public_path)
+        items = self._load_public_hw(group_code)
         new_item = {
             "id": str(uuid.uuid4()),
             "group_code": group_code,
@@ -199,13 +380,13 @@ class HomeworkService:
             "text": text,
             "telegraph_url": telegraph_url,
             "created_at": self._now_iso(),
+            "delete_at": delete_at.isoformat() if delete_at else None,
         }
         items.append(new_item)
-        self._save_json_list(self.public_path, items)
+        self._save_public_hw(group_code, items)
 
     async def format_public_view(self, group_code: str) -> str:
-        all_items = self._load_public_hw_all()
-        items = [i for i in all_items if (i.get("group_code") or "").upper() == group_code.upper()]
+        items = self._load_public_hw(group_code)
         if not items:
             return (
                 f"Для группы <b>{escape(group_code)}</b> ещё нет сохранённых общих домашних заданий.\n"
@@ -218,6 +399,7 @@ class HomeworkService:
             text = escape(item.get("text") or "")
             telegraph_url = item.get("telegraph_url")
             created_at = item.get("created_at")
+            delete_at = self._format_datetime(item.get("delete_at"))
             dt_text = ""
             if created_at:
                 try:
@@ -232,6 +414,8 @@ class HomeworkService:
                 lines.append(text)
             if telegraph_url:
                 lines.append(f"Фото: <a href=\"{escape(telegraph_url)}\">открыть</a>")
+            if delete_at:
+                lines.append(f"Удалится: <code>{escape(delete_at)}</code>")
             lines.append("")
         return "\n".join(lines)
 
