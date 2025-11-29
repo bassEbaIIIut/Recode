@@ -5,6 +5,7 @@ from html import escape
 from pathlib import Path
 
 import psutil
+from aiogram.exceptions import TelegramBadRequest
 from aiogram import Router, F
 from aiogram.filters import Command, CommandObject
 from aiogram.fsm.context import FSMContext
@@ -2035,7 +2036,13 @@ async def admin_users_prev(callback: CallbackQuery, state: FSMContext) -> None:
     users, total, pages = await ctx.db.list_users_page(prev_page, per_page)
     text = _format_users_table(users, start_index=(prev_page - 1) * per_page + 1)
     markup = admin_users_inline_keyboard(prev_page, pages)
-    await callback.message.edit_text(text, reply_markup=markup)
+    try:
+        await callback.message.edit_text(text, reply_markup=markup)
+    except TelegramBadRequest as exc:
+        if "message is not modified" in str(exc):
+            await callback.answer()
+            return
+        raise
     await callback.answer()
 
 
@@ -2059,7 +2066,13 @@ async def admin_users_next(callback: CallbackQuery, state: FSMContext) -> None:
     users, total, pages = await ctx.db.list_users_page(next_page, per_page)
     text = _format_users_table(users, start_index=(next_page - 1) * per_page + 1)
     markup = admin_users_inline_keyboard(next_page, pages)
-    await callback.message.edit_text(text, reply_markup=markup)
+    try:
+        await callback.message.edit_text(text, reply_markup=markup)
+    except TelegramBadRequest as exc:
+        if "message is not modified" in str(exc):
+            await callback.answer()
+            return
+        raise
     await callback.answer()
 
 
