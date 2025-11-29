@@ -32,6 +32,7 @@ from app.keyboards.admin import (
     admin_stewards_keyboard,
     admin_pending_inline,
     admin_models_inline,
+    admin_ai_logs_inline_keyboard,
 )
 from app.core.state_utils import preserve_state
 from app.core.states import MenuStates, AdminStates, AdminAuthStates
@@ -57,6 +58,7 @@ BROADCAST_BLOCKLIST_PATH = CONFIG_DIR / "broadcast_blocklist.json"
 DEFAULT_CATEGORY_DISABLED_TEXT = "Функция временно недоступна."
 
 BOT_START_TIME = dt.datetime.utcnow()
+AI_LOGS_PER_PAGE = 5
 
 
 def _ensure_admin_files() -> None:
@@ -158,6 +160,38 @@ def _format_admin_sessions_text(sessions: list[dict]) -> str:
             f"• <code>{tg_id}</code> — {username_text}, {full_name}\n"
             f"  Уровень: <b>{level}</b>, сессия с: <code>{formatted_created}</code>"
         )
+    return "\n".join(lines)
+
+
+def _format_ai_logs_text(logs: list[dict], page: int, total_pages: int) -> str:
+    lines: list[str] = ["🧠 <b>Логи AI-проверки домашки</b>", ""]
+    for item in logs:
+        user_id = item.get("user_id")
+        username = item.get("username")
+        full_name = item.get("full_name")
+        subject = item.get("subject")
+        text = item.get("text")
+        telegraph_url = item.get("telegraph_url")
+        ai_res = item.get("ai_result") or {}
+        raw = ai_res.get("raw")
+
+        user_line = f"ID: <code>{user_id}</code>"
+        if username:
+            user_line += f" (@{username})"
+        if full_name:
+            user_line += f" — {escape(full_name)}"
+        lines.append(user_line)
+        lines.append(f"Предмет: <b>{escape(subject or '')}</b>")
+        lines.append(f"Текст: {escape(text or '')}")
+        if telegraph_url:
+            lines.append(f"Фото: {escape(telegraph_url)}")
+        lines.append(f"Ответ нейросети: {escape(str(raw)[:800])}")
+        lines.append("")
+
+    footer = f"Показана страница {page} из {total_pages}."
+    if total_pages > 1:
+        footer += " Используйте кнопки ниже для навигации."
+    lines.append(footer)
     return "\n".join(lines)
 
 
@@ -478,35 +512,87 @@ async def cmd_ai_logs(message: Message, state: FSMContext) -> None:
             await message.answer("⛔ Доступно только администраторам.")
             return
         page = 1
-        logs, total, pages = ctx.homework_service.load_ai_logs_page(page, per_page=5)
+        logs, total, pages = ctx.homework_service.load_ai_logs_page(page, per_page=AI_LOGS_PER_PAGE)
         if total == 0:
             await message.answer("Логи AI-проверки домашки пусты.")
             return
-        lines: list[str] = ["🧠 <b>Логи AI-проверки домашки</b>", ""]
-        for item in logs:
-            user_id = item.get("user_id")
-            username = item.get("username")
-            full_name = item.get("full_name")
-            subject = item.get("subject")
-            text = item.get("text")
-            telegraph_url = item.get("telegraph_url")
-            ai_res = item.get("ai_result") or {}
-            decision = ai_res.get("decision")
-            raw = ai_res.get("raw")
-            user_line = f"ID: <code>{user_id}</code>"
-            if username:
-                user_line += f" (@{username})"
-            if full_name:
-                user_line += f" — {escape(full_name)}"
-            lines.append(user_line)
-            lines.append(f"Предмет: <b>{escape(subject or '')}</b>")
-            lines.append(f"Текст: {escape(text or '')}")
-            if telegraph_url:
-                lines.append(f"Фото: {escape(telegraph_url)}")
-            lines.append(f"Ответ нейросети: {escape(str(raw)[:800])}")
-            lines.append("")
-        lines.append(f"Показана страница 1 из {pages}. Поддержка постраничной навигации будет добавлена отдельно.")
-        await message.answer("\n".join(lines))
+
+        text = _format_ai_logs_text(logs, page, pages)
+        markup = admin_ai_logs_inline_keyboard(page, pages) if pages > 1 else None
+        await message.answer(text, reply_markup=markup)
+
+
+@router.callback_query(F.data.startswith("ai_logs_prev:"))
+async def ai_logs_prev(callback: CallbackQuery, state: FSMContext) -> None:
+    async with preserve_state(state):
+        session = await _ensure_admin_session_callback(callback, state)
+        if not session:
+            return
+
+        try:
+            page = int(callback.data.split(":", 1)[1])
+        except Exception:
+            page = 1
+
+        ctx = get_context()
+        _, total, pages = ctx.homework_service.load_ai_logs_page(page, per_page=AI_LOGS_PER_PAGE)
+        if total == 0 or pages == 0:
+            await callback.answer("Логи AI-проверки пусты.", show_alert=True)
+            return
+
+        prev_page = page - 1 if page > 1 else pages
+        logs, _, pages = ctx.homework_service.load_ai_logs_page(prev_page, per_page=AI_LOGS_PER_PAGE)
+        text = _format_ai_logs_text(logs, prev_page, pages)
+        markup = admin_ai_logs_inline_keyboard(prev_page, pages) if pages > 1 else None
+        await callback.message.edit_text(text, reply_markup=markup)
+        await callback.answer()
+
+
+@router.callback_query(F.data.startswith("ai_logs_next:"))
+async def ai_logs_next(callback: CallbackQuery, state: FSMContext) -> None:
+    async with preserve_state(state):
+        session = await _ensure_admin_session_callback(callback, state)
+        if not session:
+            return
+
+        try:
+            page = int(callback.data.split(":", 1)[1])
+        except Exception:
+            page = 1
+
+        ctx = get_context()
+        _, total, pages = ctx.homework_service.load_ai_logs_page(page, per_page=AI_LOGS_PER_PAGE)
+        if total == 0 or pages == 0:
+            await callback.answer("Логи AI-проверки пусты.", show_alert=True)
+            return
+
+        next_page = page + 1 if page < pages else 1
+        logs, _, pages = ctx.homework_service.load_ai_logs_page(next_page, per_page=AI_LOGS_PER_PAGE)
+        text = _format_ai_logs_text(logs, next_page, pages)
+        markup = admin_ai_logs_inline_keyboard(next_page, pages) if pages > 1 else None
+        await callback.message.edit_text(text, reply_markup=markup)
+        await callback.answer()
+
+
+@router.callback_query(F.data.startswith("ai_logs_page:"))
+async def ai_logs_page_info(callback: CallbackQuery, state: FSMContext) -> None:
+    async with preserve_state(state):
+        session = await _ensure_admin_session_callback(callback, state)
+        if not session:
+            return
+
+        try:
+            page = int(callback.data.split(":", 1)[1])
+        except Exception:
+            page = 1
+
+        ctx = get_context()
+        _, total, pages = ctx.homework_service.load_ai_logs_page(page, per_page=AI_LOGS_PER_PAGE)
+        if total == 0 or pages == 0:
+            await callback.answer("Логи AI-проверки пусты.", show_alert=True)
+            return
+
+        await callback.answer(f"Страница {page} из {pages}")
 
 @router.message(Command("adminpanel"))
 async def cmd_adminpanel(message: Message, state: FSMContext) -> None:
