@@ -45,14 +45,25 @@ def personal_cabinet_keyboard() -> ReplyKeyboardMarkup:
     )
 
 
-def personal_settings_keyboard(has_group: bool, notify_enabled: bool) -> ReplyKeyboardMarkup:
+def personal_settings_keyboard(has_group: bool, notify_enabled: bool, style: str) -> ReplyKeyboardMarkup:
     group_button = "Изменить группу" if has_group else "Установить группу"
     notify_button = "Уведомления о расписании: Вкл" if notify_enabled else "Уведомления о расписании: Выкл"
+    style_button = f"Стиль расписания: {style}"
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=group_button)],
             [KeyboardButton(text=notify_button)],
+            [KeyboardButton(text=style_button)],
             [KeyboardButton(text="⬅️ Назад в личный кабинет")],
         ],
         resize_keyboard=True,
     )
+
+
+def schedule_style_keyboard(current_style: str) -> ReplyKeyboardMarkup:
+    buttons = [
+        [KeyboardButton(text="Обычный"), KeyboardButton(text="Премиальный")],
+        [KeyboardButton(text="Новогодний")],
+        [KeyboardButton(text="⬅️ Назад к настройкам")],
+    ]
+    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)

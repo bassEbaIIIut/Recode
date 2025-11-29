@@ -20,7 +20,9 @@ async def setup_bot(bot: Bot, dp: Dispatcher, config: AppConfig) -> None:
     db = Database(str(config.db_path))
     await db.init()
     group_resolver = GroupResolver(config.groups_path, config.group_aliases_path)
-    schedule_service = ScheduleService(config.url_path)
+    schedule_service = ScheduleService(
+        config.url_path, times_path=config.times_path, banner_dir=config.url_path.parent
+    )
     admin_service = AdminPasswordService(config.passwords_path)
     homework_service = HomeworkService(
         db=db,
