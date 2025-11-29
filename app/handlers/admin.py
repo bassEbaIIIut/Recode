@@ -734,8 +734,21 @@ async def admin_homework_queue(message: Message, state: FSMContext) -> None:
         await message.answer("Очередь пуста")
         return
     for item in items:
-        text = f"Предложил: {item.get('username')}\nПредмет: {item.get('subject')}\nТекст: {item.get('text')}\nAI: {item.get('ai_result', {}).get('raw')}"
-        await message.answer(text, reply_markup=admin_pending_inline(item["id"]))
+        telegraph_url = item.get("telegraph_url")
+        lines = [
+            f"Предложил: @{escape(item.get('username') or '-')}",
+            f"Группа: {escape(item.get('group_code') or '-')}",
+            f"Предмет: {escape(item.get('subject') or '-')}",
+            "Текст:",
+            escape(item.get("text") or "-"),
+        ]
+        if telegraph_url:
+            safe_url = escape(telegraph_url)
+            lines.append(f"Фото: <a href=\"{safe_url}\">открыть</a>")
+        ai_raw = item.get("ai_result", {}).get("raw")
+        ai_text = escape(ai_raw if ai_raw is not None else "-")
+        lines.extend(["", "AI:", ai_text])
+        await message.answer("\n".join(lines), reply_markup=admin_pending_inline(item["id"]))
 
 
 @router.callback_query(F.data.startswith("hw_apr:"))

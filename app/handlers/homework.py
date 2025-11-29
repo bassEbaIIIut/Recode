@@ -1,4 +1,5 @@
 import datetime as dt
+from html import escape
 
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
@@ -221,16 +222,21 @@ async def homework_public_steward_queue(message: Message, state: FSMContext) -> 
         username = item.get("username") or "-"
         subject = item.get("subject") or "-"
         text = item.get("text") or "-"
+        telegraph_url = item.get("telegraph_url")
         ai_raw = item.get("ai_result", {}).get("raw")
         ai_text = ai_raw if ai_raw is not None else "-"
-        msg_text = (
-            f"Предложил: @{username}\n"
-            f"Группа: {group_code}\n"
-            f"Предмет: {subject}\n"
-            f"Текст:\n{text}\n\n"
-            f"AI:\n{ai_text}"
-        )
-        await message.answer(msg_text, reply_markup=admin_pending_inline(item["id"]))
+        lines = [
+            f"Предложил: @{escape(username)}",
+            f"Группа: {escape(group_code)}",
+            f"Предмет: {escape(subject)}",
+            "Текст:",
+            escape(text),
+        ]
+        if telegraph_url:
+            safe_url = escape(telegraph_url)
+            lines.append(f"Фото: <a href=\"{safe_url}\">открыть</a>")
+        lines.extend(["", "AI:", escape(ai_text)])
+        await message.answer("\n".join(lines), reply_markup=admin_pending_inline(item["id"]))
 
 
 @router.message(HomeworkStates.PERSONAL_ADD_WAIT_CONTENT, F.photo)
