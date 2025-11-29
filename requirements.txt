@@ -2,3 +2,5 @@ aiogram
 aiosqlite
 requests
 beautifulsoup4
+weasyprint
+pdf2image
