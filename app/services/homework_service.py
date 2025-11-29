@@ -430,6 +430,7 @@ class HomeworkService:
         telegraph_url: str | None,
         ai_result: dict | None,
     ) -> None:
+        normalized_ai = self._normalize_ai_result(ai_result)
         items = self._load_json_list(self.pending_path)
         new_item = {
             "id": str(uuid.uuid4()),
@@ -440,7 +441,7 @@ class HomeworkService:
             "subject": subject,
             "text": text,
             "telegraph_url": telegraph_url,
-            "ai_result": ai_result or {},
+            "ai_result": normalized_ai,
             "created_at": self._now_iso(),
         }
         items.append(new_item)
@@ -483,6 +484,7 @@ class HomeworkService:
         telegraph_url: str | None,
         result: dict | None,
     ) -> None:
+        normalized_ai = self._normalize_ai_result(result)
         entry = {
             "timestamp": self._now_iso(),
             "user_id": user_id,
@@ -491,7 +493,7 @@ class HomeworkService:
             "subject": subject,
             "text": text,
             "telegraph_url": telegraph_url,
-            "ai_result": result or {},
+            "ai_result": normalized_ai,
         }
         with self.ai_logs_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
