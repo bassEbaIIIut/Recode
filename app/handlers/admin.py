@@ -33,6 +33,7 @@ from app.keyboards.admin import (
     admin_pending_inline,
     admin_models_inline,
 )
+from app.core.state_utils import preserve_state
 from app.core.states import MenuStates, AdminStates, AdminAuthStates
 from app.core.commands import get_admin_bot_commands, get_default_bot_commands
 from app.core.context import get_context
@@ -419,94 +420,93 @@ async def _process_admin_login(message: Message, state: FSMContext, password: st
 
 @router.message(Command("givepremium"))
 async def cmd_givepremium(message: Message, command: CommandObject, state: FSMContext) -> None:
-    ctx = get_context()
-    session = await ctx.db.get_active_admin_session_for_user(message.from_user.id)
-    if not session or session.get("level", 0) < 2:
-        await message.answer("⛔ Команда доступна только администраторам уровня 2+.")
-        return
-    args = (command.args or "").strip()
-    if not args:
-        await message.answer(
-            "Использование: <code>/givepremium @username 60d</code> или <code>/givepremium 123456789 15d</code>."
-        )
-        return
-    parts = args.split()
-    if len(parts) != 2:
-        await message.answer(
-            "Нужно указать пользователя и срок. Пример: <code>/givepremium @user 30d</code>."
-        )
-        return
-    ident, period = parts
-    if not period.endswith("d"):
-        await message.answer("Срок указывается в днях, например: <code>30d</code>.")
-        return
-    try:
-        days = int(period[:-1])
-    except Exception:
-        await message.answer("Неверный формат срока. Пример: <code>30d</code>.")
-        return
-    if days <= 0:
-        await message.answer("Срок должен быть больше нуля.")
-        return
-    tg_id: int | None = None
-    if ident.lstrip("@").isdigit():
-        tg_id = int(ident.lstrip("@"))
-    else:
-        username = ident.lstrip("@").lower()
-        users = await ctx.db.search_users(username)
-        if not users:
-            await message.answer("Пользователь с таким username не найден в базе.")
+    async with preserve_state(state):
+        ctx = get_context()
+        session = await ctx.db.get_active_admin_session_for_user(message.from_user.id)
+        if not session or session.get("level", 0) < 2:
+            await message.answer("⛔ Команда доступна только администраторам уровня 2+.")
             return
-        tg_id = users[0].get("tg_id")
-    if not tg_id:
-        await message.answer("Не удалось определить ID пользователя.")
-        return
-    until = dt.datetime.utcnow() + dt.timedelta(days=days)
-    await ctx.db.set_user_premium(tg_id, until)
-    until_str = until.strftime("%d.%m.%Y")
-    await message.answer(
-        f"✅ Премиум выдан пользователю <code>{tg_id}</code> до <b>{until_str}</b>."
-    )
-
-
+        args = (command.args or "").strip()
+        if not args:
+            await message.answer(
+                "Использование: <code>/givepremium @username 60d</code> или <code>/givepremium 123456789 15d</code>."
+            )
+            return
+        parts = args.split()
+        if len(parts) != 2:
+            await message.answer(
+                "Нужно указать пользователя и срок. Пример: <code>/givepremium @user 30d</code>."
+            )
+            return
+        ident, period = parts
+        if not period.endswith("d"):
+            await message.answer("Срок указывается в днях, например: <code>30d</code>.")
+            return
+        try:
+            days = int(period[:-1])
+        except Exception:
+            await message.answer("Неверный формат срока. Пример: <code>30d</code>.")
+            return
+        if days <= 0:
+            await message.answer("Срок должен быть больше нуля.")
+            return
+        tg_id: int | None = None
+        if ident.lstrip("@").isdigit():
+            tg_id = int(ident.lstrip("@"))
+        else:
+            username = ident.lstrip("@").lower()
+            users = await ctx.db.search_users(username)
+            if not users:
+                await message.answer("Пользователь с таким username не найден в базе.")
+                return
+            tg_id = users[0].get("tg_id")
+        if not tg_id:
+            await message.answer("Не удалось определить ID пользователя.")
+            return
+        until = dt.datetime.utcnow() + dt.timedelta(days=days)
+        await ctx.db.set_user_premium(tg_id, until)
+        until_str = until.strftime("%d.%m.%Y")
+        await message.answer(
+            f"✅ Премиум выдан пользователю <code>{tg_id}</code> до <b>{until_str}</b>.",
+        )
 @router.message(Command("ai_logs"))
 async def cmd_ai_logs(message: Message, state: FSMContext) -> None:
-    ctx = get_context()
-    session = await ctx.db.get_active_admin_session_for_user(message.from_user.id)
-    if not session:
-        await message.answer("⛔ Доступно только администраторам.")
-        return
-    page = 1
-    logs, total, pages = ctx.homework_service.load_ai_logs_page(page, per_page=5)
-    if total == 0:
-        await message.answer("Логи AI-проверки домашки пусты.")
-        return
-    lines: list[str] = ["🧠 <b>Логи AI-проверки домашки</b>", ""]
-    for item in logs:
-        user_id = item.get("user_id")
-        username = item.get("username")
-        full_name = item.get("full_name")
-        subject = item.get("subject")
-        text = item.get("text")
-        telegraph_url = item.get("telegraph_url")
-        ai_res = item.get("ai_result") or {}
-        decision = ai_res.get("decision")
-        raw = ai_res.get("raw")
-        user_line = f"ID: <code>{user_id}</code>"
-        if username:
-            user_line += f" (@{username})"
-        if full_name:
-            user_line += f" — {escape(full_name)}"
-        lines.append(user_line)
-        lines.append(f"Предмет: <b>{escape(subject or '')}</b>")
-        lines.append(f"Текст: {escape(text or '')}")
-        if telegraph_url:
-            lines.append(f"Фото: {escape(telegraph_url)}")
-        lines.append(f"Ответ нейросети: {escape(str(raw)[:800])}")
-        lines.append("")
-    lines.append(f"Показана страница 1 из {pages}. Поддержка постраничной навигации будет добавлена отдельно.")
-    await message.answer("\n".join(lines))
-
+    async with preserve_state(state):
+        ctx = get_context()
+        session = await ctx.db.get_active_admin_session_for_user(message.from_user.id)
+        if not session:
+            await message.answer("⛔ Доступно только администраторам.")
+            return
+        page = 1
+        logs, total, pages = ctx.homework_service.load_ai_logs_page(page, per_page=5)
+        if total == 0:
+            await message.answer("Логи AI-проверки домашки пусты.")
+            return
+        lines: list[str] = ["🧠 <b>Логи AI-проверки домашки</b>", ""]
+        for item in logs:
+            user_id = item.get("user_id")
+            username = item.get("username")
+            full_name = item.get("full_name")
+            subject = item.get("subject")
+            text = item.get("text")
+            telegraph_url = item.get("telegraph_url")
+            ai_res = item.get("ai_result") or {}
+            decision = ai_res.get("decision")
+            raw = ai_res.get("raw")
+            user_line = f"ID: <code>{user_id}</code>"
+            if username:
+                user_line += f" (@{username})"
+            if full_name:
+                user_line += f" — {escape(full_name)}"
+            lines.append(user_line)
+            lines.append(f"Предмет: <b>{escape(subject or '')}</b>")
+            lines.append(f"Текст: {escape(text or '')}")
+            if telegraph_url:
+                lines.append(f"Фото: {escape(telegraph_url)}")
+            lines.append(f"Ответ нейросети: {escape(str(raw)[:800])}")
+            lines.append("")
+        lines.append(f"Показана страница 1 из {pages}. Поддержка постраничной навигации будет добавлена отдельно.")
+        await message.answer("\n".join(lines))
 
 @router.message(Command("adminpanel"))
 async def cmd_adminpanel(message: Message, state: FSMContext) -> None:
