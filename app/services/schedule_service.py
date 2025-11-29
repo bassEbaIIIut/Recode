@@ -477,10 +477,43 @@ class ScheduleService:
     def _render_html_to_png(self, html: str, out_path: Path) -> None:
         if HTML is None:
             return
-        HTML(string=html, base_url=str(self.banner_dir)).write_png(
-            target=str(out_path),
-            stylesheets=[CSS(string="body { background: transparent; }")],
-        )
+        html_doc = HTML(string=html, base_url=str(self.banner_dir))
+        stylesheets = [CSS(string="body { background: transparent; }")]
+
+        # Newer versions of WeasyPrint ship write_png on the HTML instance, but
+        # some distributions package builds without this helper. Gracefully fall
+        # back to rendering the document and trying alternative outputs instead
+        # of crashing the bot with AttributeError.
+        if hasattr(html_doc, "write_png"):
+            html_doc.write_png(target=str(out_path), stylesheets=stylesheets)
+            return
+
+        try:
+            document = html_doc.render(stylesheets=stylesheets)
+        except Exception as e:  # pragma: no cover - optional dependency issues
+            logging.error("failed to render banner html: %s", e)
+            return
+
+        if hasattr(document, "write_png"):
+            document.write_png(target=str(out_path))
+            return
+
+        try:
+            from pdf2image import convert_from_bytes
+        except Exception as e:  # pragma: no cover - optional dependency issues
+            logging.error(
+                "PNG export is unavailable; install WeasyPrint with PNG support or pdf2image: %s",
+                e,
+            )
+            return
+
+        try:
+            pdf_bytes = document.write_pdf()
+            images = convert_from_bytes(pdf_bytes)
+            if images:
+                images[0].save(out_path, format="PNG")
+        except Exception as e:  # pragma: no cover - optional dependency issues
+            logging.error("failed to convert banner pdf to png: %s", e)
 
     async def generate_day_banner(
         self,
