@@ -37,6 +37,11 @@ class Database:
                     "ALTER TABLE users "
                     "ADD COLUMN schedule_notify_enabled INTEGER NOT NULL DEFAULT 1"
                 )
+            if "schedule_style" not in column_names:
+                await db.execute(
+                    "ALTER TABLE users "
+                    "ADD COLUMN schedule_style TEXT"
+                )
             await db.execute(
                 """
                 CREATE TABLE IF NOT EXISTS admin_sessions (
@@ -723,6 +728,27 @@ class Database:
             await db.execute(
                 "UPDATE users SET schedule_notify_enabled = ? WHERE tg_id = ?",
                 (1 if enabled else 0, tg_id),
+            )
+            await db.commit()
+
+    async def get_schedule_style(self, tg_id: int) -> str:
+        async with aiosqlite.connect(self.path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT schedule_style FROM users WHERE tg_id = ?",
+                (tg_id,),
+            )
+            row = await cursor.fetchone()
+            value = row["schedule_style"] if row else None
+            if not value:
+                return "Обычный"
+            return str(value)
+
+    async def set_schedule_style(self, tg_id: int, style: str) -> None:
+        async with aiosqlite.connect(self.path) as db:
+            await db.execute(
+                "UPDATE users SET schedule_style = ? WHERE tg_id = ?",
+                (style, tg_id),
             )
             await db.commit()
 

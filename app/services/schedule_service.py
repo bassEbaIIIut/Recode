@@ -3,10 +3,18 @@ import datetime as dt
 import json
 import logging
 import re
+from html import escape
 from pathlib import Path
+from uuid import uuid4
 
 import requests
 from bs4 import BeautifulSoup
+
+try:
+    from weasyprint import HTML, CSS
+except ImportError:  # pragma: no cover - optional dependency
+    HTML = None
+    CSS = None
 
 
 def week_bounds_mon_sun(d):
@@ -222,7 +230,7 @@ def make_blocks(schedule, max_pairs=8, subgroup=None, multiline=False):
     return blocks
 
 class ScheduleService:
-    def __init__(self, url_path: Path):
+    def __init__(self, url_path: Path, times_path: Path, banner_dir: Path | None = None):
         url_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             with url_path.open(encoding="utf-8") as f:
@@ -234,9 +242,296 @@ class ScheduleService:
         self.url_map: dict[str, str] = data if isinstance(data, dict) else {}
         self.schedule_dir = url_path.parent / "schedule"
         self.schedule_dir.mkdir(parents=True, exist_ok=True)
+        self.times_path = times_path
+        self._times_cache: dict | None = None
+        self.banner_dir = (banner_dir or url_path.parent / "schedule_banners")
+        self.banner_dir.mkdir(parents=True, exist_ok=True)
+        self.custom_background_path = self.banner_dir / "custom_background.jpg"
 
     def get_url_for_group(self, group_code: str) -> str | None:
         return self.url_map.get(group_code)
+
+    async def get_schedule_data(self, group_code: str, target_date: dt.date) -> dict:
+        return await self._fetch_schedule_for_group(group_code, target_date)
+
+    def _normalize_text(self, s: str) -> str:
+        s = (s or "").lower().replace("ё", "е")
+        return re.sub(r"[\s\-]", "", s)
+
+    def _load_times(self) -> dict:
+        if self._times_cache is None:
+            try:
+                raw = self.times_path.read_text(encoding="utf-8")
+                self._times_cache = json.loads(raw or "{}")
+            except Exception:
+                self._times_cache = {}
+        return self._times_cache or {}
+
+    def _find_times_template(self, group_code: str) -> str | None:
+        data = self._load_times()
+        groups_map = data.get("groups_map", {})
+        target = self._normalize_text(group_code)
+        for key, info in groups_map.items():
+            matches = info.get("match") if isinstance(info, dict) else None
+            if not matches:
+                continue
+            for m in matches:
+                if self._normalize_text(m) == target:
+                    return key
+        return None
+
+    def _weekday_key(self, date_obj: dt.date) -> str:
+        return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"][date_obj.weekday()]
+
+    def _filter_lessons(self, lessons: list[str]) -> list[str]:
+        filtered = []
+        for item in lessons:
+            low = item.lower()
+            if "внеуроч" in low or "обед" in low:
+                continue
+            filtered.append(item)
+        return filtered
+
+    def _extract_day_times(self, group_code: str, date_obj: dt.date, max_pairs: int) -> list[str]:
+        template_key = self._find_times_template(group_code)
+        if not template_key:
+            return []
+        data = self._load_times()
+        template = data.get("templates", {}).get(template_key, {})
+        day_key = self._weekday_key(date_obj)
+        lessons = template.get(day_key)
+        if not isinstance(lessons, list):
+            return []
+        filtered = self._filter_lessons(lessons)
+        return filtered[:max_pairs]
+
+    def _pair_cells(self, info: dict, pair_num: int) -> tuple[str, str]:
+        merge = info.get("merge", {}).get(pair_num)
+        if merge:
+            return merge, merge
+        cols = info.get("pairs_cols", {}).get(pair_num)
+        if cols:
+            first = cols[0] if len(cols) > 0 else ""
+            second = cols[1] if len(cols) > 1 else ""
+            return first or "", second or ""
+        pairs = info.get("pairs", {}).get(pair_num, [])
+        if not pairs:
+            return "", ""
+        if len(pairs) == 1:
+            return pairs[0], pairs[0]
+        return pairs[0] or "", pairs[1] or ""
+
+    def _max_pairs_for_day(self, info: dict) -> int:
+        numbers = set()
+        for key in ("pairs", "pairs_cols", "merge"):
+            numbers.update((info.get(key, {}) or {}).keys())
+        if not numbers:
+            return 8
+        return max(max(numbers), 8)
+
+    def _style_palette(self, style: str) -> dict:
+        palette = {
+            "Обычный": {
+                "header": "#ffffff",
+                "accent": "#8ab4f8",
+                "bg_overlay": "rgba(0, 0, 0, 0.45)",
+                "cell": "rgba(255, 255, 255, 0.08)",
+                "border": "rgba(255, 255, 255, 0.25)",
+                "title_shadow": "0 4px 12px rgba(0, 0, 0, 0.45)",
+            },
+            "Новогодний": {
+                "header": "#fefefe",
+                "accent": "#f04f54",
+                "bg_overlay": "rgba(0, 0, 0, 0.55)",
+                "cell": "rgba(255, 255, 255, 0.1)",
+                "border": "rgba(240, 79, 84, 0.45)",
+                "title_shadow": "0 6px 16px rgba(240, 79, 84, 0.45)",
+            },
+            "Премиальный": {
+                "header": "#f5e6c4",
+                "accent": "#d4af37",
+                "bg_overlay": "rgba(0, 0, 0, 0.55)",
+                "cell": "rgba(245, 230, 196, 0.08)",
+                "border": "rgba(212, 175, 55, 0.5)",
+                "title_shadow": "0 6px 16px rgba(212, 175, 55, 0.4)",
+            },
+        }
+        return palette.get(style, palette["Обычный"])
+
+    def _build_day_rows(
+        self,
+        info: dict,
+        group_code: str,
+        date_obj: dt.date,
+        max_pairs: int,
+    ) -> list[dict[str, str]]:
+        times = self._extract_day_times(group_code, date_obj, max_pairs)
+        rows: list[dict[str, str]] = []
+        for pair_num in range(1, max_pairs + 1):
+            time_label = times[pair_num - 1] if pair_num - 1 < len(times) else "—"
+            c1, c2 = self._pair_cells(info, pair_num)
+            rows.append(
+                {
+                    "pair": str(pair_num),
+                    "time": time_label,
+                    "sub1": c1 or "—",
+                    "sub2": c2 or "—",
+                }
+            )
+        return rows
+
+    def _build_banner_html(
+        self,
+        title: str,
+        rows: list[dict[str, str]],
+        palette: dict,
+        background_path: Path | None,
+    ) -> str:
+        bg_style = ""
+        if background_path and background_path.exists():
+            bg_style = f"background-image: linear-gradient({palette['bg_overlay']}, {palette['bg_overlay']}), url('{background_path.as_uri()}');"
+        else:
+            bg_style = "background: linear-gradient(135deg, #1a2a6c, #16222a);"
+        css = f"""
+        body {{
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            color: {palette['header']};
+        }}
+        .banner {{
+            width: 1280px;
+            padding: 28px 32px;
+            box-sizing: border-box;
+            background-size: cover;
+            background-position: center;
+            border-radius: 18px;
+            {bg_style}
+        }}
+        .overlay {{
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 14px;
+            padding: 20px 18px 18px 18px;
+            backdrop-filter: blur(1px);
+        }}
+        .title {{
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 14px 0;
+            text-shadow: {palette['title_shadow']};
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+        }}
+        th {{
+            text-align: left;
+            padding: 10px 12px;
+            background: {palette['cell']};
+            border: 1px solid {palette['border']};
+        }}
+        td {{
+            padding: 10px 12px;
+            background: {palette['cell']};
+            border: 1px solid {palette['border']};
+        }}
+        th:first-child, td:first-child {{ width: 8%; text-align: center; }}
+        th:nth-child(2), td:nth-child(2) {{ width: 22%; }}
+        th:nth-child(3), td:nth-child(3) {{ width: 35%; }}
+        th:nth-child(4), td:nth-child(4) {{ width: 35%; }}
+        .accent {{ color: {palette['accent']}; }}
+        """
+        rows_html = "\n".join(
+            [
+                f"<tr><td>{r['pair']}</td><td>{r['time']}</td><td>{escape(r['sub1'])}</td><td>{escape(r['sub2'])}</td></tr>"
+                for r in rows
+            ]
+        )
+        return f"""
+        <html>
+            <head><style>{css}</style></head>
+            <body>
+                <div class=\"banner\">
+                    <div class=\"overlay\">
+                        <div class=\"title\">{title}</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th class=\"accent\">Время</th>
+                                    <th>Подгруппа 1</th>
+                                    <th>Подгруппа 2</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows_html}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+
+    def _can_render_png(self) -> bool:
+        return HTML is not None and hasattr(HTML, "write_png")
+
+    def _render_html_to_png(self, html: str, out_path: Path) -> None:
+        if not self._can_render_png():
+            logging.warning("WeasyPrint is unavailable or does not support PNG export")
+            return
+        HTML(string=html, base_url=str(self.banner_dir)).write_png(
+            target=str(out_path),
+            stylesheets=[CSS(string="body { background: transparent; }")],
+        )
+
+    async def generate_day_banner(
+        self,
+        schedule: dict,
+        group_code: str,
+        date_obj: dt.date,
+        style: str,
+        title_prefix: str | None = None,
+    ) -> Path | None:
+        if not self._can_render_png():
+            return None
+        date_str = date_obj.strftime("%d.%m.%Y")
+        info = schedule.get(date_str, {})
+        if not info:
+            return None
+        max_pairs = self._max_pairs_for_day(info)
+        rows = self._build_day_rows(info, group_code, date_obj, max_pairs)
+        palette = self._style_palette(style)
+        title_left = title_prefix or day_name_ru(date_obj.weekday())
+        title = f"{title_left} • {date_str}"
+        html = self._build_banner_html(title, rows, palette, self.custom_background_path)
+        out_path = self.banner_dir / f"banner_{uuid4().hex}.png"
+        await asyncio.to_thread(self._render_html_to_png, html, out_path)
+        if out_path.exists():
+            return out_path
+        return None
+
+    async def generate_week_banners(
+        self, schedule: dict, group_code: str, base_date: dt.date, style: str
+    ) -> list[Path]:
+        if not self._can_render_png():
+            return []
+        monday, saturday = week_mon_sat_for_display(base_date)
+        current = monday
+        result: list[Path] = []
+        while current <= saturday:
+            banner = await self.generate_day_banner(
+                schedule,
+                group_code,
+                current,
+                style,
+                day_name_ru(current.weekday()),
+            )
+            if banner:
+                result.append(banner)
+            current += dt.timedelta(days=1)
+        return result
 
     def _schedule_filename(self, group_code: str, monday: dt.date, saturday: dt.date) -> Path:
         name = f"{group_code}_{monday.strftime('%d.%m.%y')}-{saturday.strftime('%d.%m.%y')}.json"
@@ -314,8 +609,7 @@ class ScheduleService:
         """Return cached or freshly fetched schedule for the requested week."""
         return await self._fetch_schedule_for_group(group_code, base_date)
 
-    async def get_day_schedule_text(self, group_code: str, date_obj: dt.date) -> str:
-        schedule = await self._fetch_schedule_for_group(group_code, date_obj)
+    def build_day_schedule_text(self, schedule: dict, group_code: str, date_obj: dt.date) -> str:
         if not schedule:
             return f"Не удалось получить расписание для группы <b>{group_code}</b>."
         date_str = date_obj.strftime("%d.%m.%Y")
@@ -325,8 +619,7 @@ class ScheduleService:
         lessons_text = "\n".join(lessons)
         return header_text + f"<blockquote>{lessons_text}</blockquote>"
 
-    async def get_week_schedule_text(self, group_code: str, base_date: dt.date) -> str:
-        schedule = await self._fetch_schedule_for_group(group_code, base_date)
+    def build_week_schedule_text(self, schedule: dict, base_date: dt.date, group_code: str) -> str:
         if not schedule:
             return f"Не удалось получить расписание для группы <b>{group_code}</b>."
         monday, saturday = week_mon_sat_for_display(base_date)
@@ -343,6 +636,14 @@ class ScheduleService:
         if not parts:
             return f"Для недели, начинающейся {monday.strftime('%d.%m.%Y')}, расписание не найдено."
         return "\n\n".join(parts)
+
+    async def get_day_schedule_text(self, group_code: str, date_obj: dt.date) -> str:
+        schedule = await self._fetch_schedule_for_group(group_code, date_obj)
+        return self.build_day_schedule_text(schedule, group_code, date_obj)
+
+    async def get_week_schedule_text(self, group_code: str, base_date: dt.date) -> str:
+        schedule = await self._fetch_schedule_for_group(group_code, base_date)
+        return self.build_week_schedule_text(schedule, base_date, group_code)
 
     async def get_unique_subjects_for_week(self, group_code: str, base_date: dt.date) -> list[str]:
         schedule = await self._fetch_schedule_for_group(group_code, base_date)

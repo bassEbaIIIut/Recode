@@ -25,6 +25,7 @@ class PersonalCabinetStates(StatesGroup):
     MENU = State()
     SETTINGS = State()
     SETTINGS_WAIT_GROUP = State()
+    SETTINGS_WAIT_STYLE = State()
 
 
 class AdminAuthStates(StatesGroup):

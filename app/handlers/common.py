@@ -13,6 +13,7 @@ from app.keyboards.reply import (
     schedule_keyboard,
     personal_cabinet_keyboard,
     personal_settings_keyboard,
+    schedule_style_keyboard,
 )
 from app.handlers.admin import _load_categories_config
 from app.keyboards.homework import homework_main_keyboard
@@ -41,6 +42,7 @@ async def _build_personal_cabinet_text(message: Message) -> str:
     else:
         steward_line = None
     notify_enabled = await ctx.db.get_schedule_notify_enabled(message.from_user.id)
+    schedule_style = await ctx.db.get_schedule_style(message.from_user.id)
     notify_line = (
         "Уведомления об изменении расписания: включены"
         if notify_enabled
@@ -53,6 +55,7 @@ async def _build_personal_cabinet_text(message: Message) -> str:
         "",
         premium_line,
         notify_line,
+        f"Стиль расписания: <b>{schedule_style}</b>",
     ]
     if steward_line:
         lines.append(steward_line)
@@ -71,12 +74,16 @@ async def _keyboard_for_current_menu(message: Message, state: FSMContext):
         return homework_main_keyboard()
     if current_state == PersonalCabinetStates.MENU.state:
         return personal_cabinet_keyboard()
-    if current_state == PersonalCabinetStates.SETTINGS.state:
+    if current_state in {
+        PersonalCabinetStates.SETTINGS.state,
+        PersonalCabinetStates.SETTINGS_WAIT_STYLE.state,
+    }:
         user = await ctx.db.get_user(message.from_user.id)
         group_code = user["group_code"] if user else None
         has_group = bool(group_code)
         notify_enabled = await ctx.db.get_schedule_notify_enabled(message.from_user.id)
-        return personal_settings_keyboard(has_group, notify_enabled)
+        schedule_style = await ctx.db.get_schedule_style(message.from_user.id)
+        return personal_settings_keyboard(has_group, notify_enabled, schedule_style)
     return main_menu_keyboard()
 
 
@@ -223,6 +230,7 @@ async def personal_cabinet_settings(message: Message, state: FSMContext) -> None
     group_code = user["group_code"] if user else None
     has_group = bool(group_code)
     notify_enabled = await ctx.db.get_schedule_notify_enabled(message.from_user.id)
+    schedule_style = await ctx.db.get_schedule_style(message.from_user.id)
     group_text = group_code if group_code else "не указана"
     lines: list[str] = [
         "<b>Настройки личного кабинета</b>",
@@ -231,10 +239,13 @@ async def personal_cabinet_settings(message: Message, state: FSMContext) -> None
         "Уведомления об изменении расписания: включены"
         if notify_enabled
         else "Уведомления об изменении расписания: выключены",
+        f"Стиль расписания: <b>{schedule_style}</b>",
     ]
     text = "\n".join(lines)
     await state.set_state(PersonalCabinetStates.SETTINGS)
-    await message.answer(text, reply_markup=personal_settings_keyboard(has_group, notify_enabled))
+    await message.answer(
+        text, reply_markup=personal_settings_keyboard(has_group, notify_enabled, schedule_style)
+    )
 
 
 @router.message(PersonalCabinetStates.SETTINGS, F.text == "⬅️ Назад в личный кабинет")
@@ -253,10 +264,55 @@ async def personal_settings_toggle_notifications(message: Message, state: FSMCon
     user = await ctx.db.get_user(message.from_user.id)
     group_code = user["group_code"] if user else None
     has_group = bool(group_code)
+    schedule_style = await ctx.db.get_schedule_style(message.from_user.id)
     status_text = "включены" if new_value else "выключены"
     await message.answer(
         f"Уведомления об изменении расписания теперь {status_text}.",
-        reply_markup=personal_settings_keyboard(has_group, new_value),
+        reply_markup=personal_settings_keyboard(has_group, new_value, schedule_style),
+    )
+
+
+@router.message(PersonalCabinetStates.SETTINGS, F.text.startswith("Стиль расписания"))
+async def personal_settings_select_style(message: Message, state: FSMContext) -> None:
+    schedule_style = await get_context().db.get_schedule_style(message.from_user.id)
+    await state.set_state(PersonalCabinetStates.SETTINGS_WAIT_STYLE)
+    await message.answer(
+        "Выберите стиль оформления расписания.",
+        reply_markup=schedule_style_keyboard(schedule_style),
+    )
+
+
+@router.message(PersonalCabinetStates.SETTINGS_WAIT_STYLE, F.text == "⬅️ Назад к настройкам")
+async def personal_settings_style_back(message: Message, state: FSMContext) -> None:
+    ctx = get_context()
+    user = await ctx.db.get_user(message.from_user.id)
+    group_code = user["group_code"] if user else None
+    has_group = bool(group_code)
+    notify_enabled = await ctx.db.get_schedule_notify_enabled(message.from_user.id)
+    schedule_style = await ctx.db.get_schedule_style(message.from_user.id)
+    await state.set_state(PersonalCabinetStates.SETTINGS)
+    await message.answer(
+        "Вы вернулись в настройки.",
+        reply_markup=personal_settings_keyboard(has_group, notify_enabled, schedule_style),
+    )
+
+
+@router.message(
+    PersonalCabinetStates.SETTINGS_WAIT_STYLE,
+    F.text.in_({"Обычный", "Новогодний", "Премиальный"}),
+)
+async def personal_settings_style_apply(message: Message, state: FSMContext) -> None:
+    ctx = get_context()
+    new_style = message.text
+    await ctx.db.set_schedule_style(message.from_user.id, new_style)
+    user = await ctx.db.get_user(message.from_user.id)
+    group_code = user["group_code"] if user else None
+    has_group = bool(group_code)
+    notify_enabled = await ctx.db.get_schedule_notify_enabled(message.from_user.id)
+    await state.set_state(PersonalCabinetStates.SETTINGS)
+    await message.answer(
+        f"Стиль расписания изменён на <b>{new_style}</b>.",
+        reply_markup=personal_settings_keyboard(has_group, notify_enabled, new_style),
     )
 
 
@@ -292,10 +348,11 @@ async def personal_settings_group_input(message: Message, state: FSMContext) -> 
         return
     await ctx.db.set_user_group(message.from_user.id, canonical)
     notify_enabled = await ctx.db.get_schedule_notify_enabled(message.from_user.id)
+    schedule_style = await ctx.db.get_schedule_style(message.from_user.id)
     await state.set_state(PersonalCabinetStates.SETTINGS)
     await message.answer(
         f"Группа <b>{canonical}</b> установлена по умолчанию.",
-        reply_markup=personal_settings_keyboard(True, notify_enabled),
+        reply_markup=personal_settings_keyboard(True, notify_enabled, schedule_style),
     )
 
 

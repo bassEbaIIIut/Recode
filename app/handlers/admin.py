@@ -1,6 +1,7 @@
 import asyncio
 import datetime as dt
 import json
+import logging
 from html import escape
 from pathlib import Path
 
@@ -627,6 +628,26 @@ async def cmd_adminpanel(message: Message, state: FSMContext) -> None:
 @router.message(AdminAuthStates.waiting_for_password)
 async def adminpanel_password_input(message: Message, state: FSMContext) -> None:
     await _process_admin_login(message, state, message.text or "")
+
+
+@router.message(Command("setbanner"))
+async def admin_set_banner(message: Message, state: FSMContext) -> None:
+    session = await _ensure_admin_session_message(message, state, min_level=3)
+    if not session:
+        return
+    if not message.photo:
+        await message.answer("Пришлите команду с фотографией, чтобы установить фон баннера.")
+        return
+    ctx = get_context()
+    banner_path = ctx.schedule_service.custom_background_path
+    banner_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        await message.bot.download(file=message.photo[-1], destination=banner_path)
+    except Exception as e:  # pragma: no cover - network dependent
+        logging.error("failed to save banner: %s", e)
+        await message.answer("Не удалось сохранить баннер. Попробуйте ещё раз позже.")
+        return
+    await message.answer("Фон баннера обновлён и будет использован при генерации расписания.")
 
 
 @router.message(AdminStates.MAIN, F.text == "📚 Управление домашкой")
