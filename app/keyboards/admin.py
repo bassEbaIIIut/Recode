@@ -121,6 +121,27 @@ def admin_users_inline_keyboard(page: int, total_pages: int) -> InlineKeyboardMa
     )
 
 
+def admin_ai_logs_inline_keyboard(page: int, total_pages: int) -> InlineKeyboardMarkup:
+    if total_pages < 1:
+        total_pages = 1
+    if page < 1:
+        page = 1
+    if page > total_pages:
+        page = total_pages
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="⬅️", callback_data=f"ai_logs_prev:{page}"),
+                InlineKeyboardButton(
+                    text=f"📄 {page}/{total_pages}", callback_data=f"ai_logs_page:{page}"
+                ),
+                InlineKeyboardButton(text="➡️", callback_data=f"ai_logs_next:{page}"),
+            ]
+        ]
+    )
+
+
 def admin_sessions_keyboard(sessions: list[dict]) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     for s in sessions:
